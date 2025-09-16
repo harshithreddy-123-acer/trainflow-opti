@@ -29,6 +29,7 @@ interface Recommendation {
   id: string;
   type: 'priority' | 'hold' | 'route';
   description: string;
+  explanation: string;
   impact: string;
   confidence: number;
 }
@@ -46,6 +47,7 @@ const TrainControlDashboard = () => {
       id: 'R001',
       type: 'priority',
       description: 'Give priority to Express Mumbai at Junction B',
+      explanation: 'Express Mumbai is approaching Junction B with high passenger load (450+ passengers) and strict schedule adherence requirements. Current signal timing would cause 8-minute delay. Priority passage will maintain schedule while Local Delhi can absorb 3-minute delay with minimal passenger impact.',
       impact: '+12% throughput improvement',
       confidence: 94
     },
@@ -53,6 +55,7 @@ const TrainControlDashboard = () => {
       id: 'R002', 
       type: 'hold',
       description: 'Hold Local Delhi for 3 minutes to avoid conflict',
+      explanation: 'Predictive analysis shows Local Delhi and Freight Cargo will create deadlock at Platform 2 in 4 minutes. Holding Local Delhi for 3 minutes allows Freight Cargo to clear the platform, preventing cascade delays across 3 downstream trains. Safety buffer maintained at 2.5 minutes headway.',
       impact: '-8 minutes total delay',
       confidence: 87
     }
@@ -259,7 +262,11 @@ const TrainControlDashboard = () => {
                           </Badge>
                           <span className="text-sm text-muted-foreground">{rec.confidence}% confidence</span>
                         </div>
-                        <p className="text-sm">{rec.description}</p>
+                        <p className="text-sm font-medium">{rec.description}</p>
+                        <div className="p-3 bg-muted/30 rounded-md border-l-4 border-accent">
+                          <p className="text-xs text-muted-foreground mb-1 font-medium">AI Reasoning:</p>
+                          <p className="text-xs text-foreground leading-relaxed">{rec.explanation}</p>
+                        </div>
                         <p className="text-xs text-success font-medium">{rec.impact}</p>
                         <div className="flex gap-2 pt-2">
                           <Button 
