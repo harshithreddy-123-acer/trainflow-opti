@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Train, 
   Activity, 
@@ -13,8 +14,17 @@ import {
   Signal,
   Settings,
   Play,
-  Pause
+  Pause,
+  BarChart,
+  Users,
+  Lightbulb
 } from 'lucide-react';
+
+// Import new components
+import ConflictChecker from './ConflictChecker';
+import DelaySimulator from './DelaySimulator';
+import PerformanceStats from './PerformanceStats';
+import LearningCollaboration from './LearningCollaboration';
 
 interface Train {
   id: string;
@@ -196,103 +206,147 @@ const TrainControlDashboard = () => {
           </Card>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Track Visualization */}
-          <Card className="lg:col-span-2 gradient-control border-border">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Signal className="h-5 w-5 text-primary" />
-                Live Track Status
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {trains.map((train) => (
-                  <div key={train.id} className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <Train className={`h-5 w-5 ${train.status === 'moving' ? 'train-moving text-primary' : 'text-muted-foreground'}`} />
-                        <div>
-                          <p className="font-medium">{train.name}</p>
-                          <p className="text-sm text-muted-foreground">→ {train.destination}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <Badge variant={train.status === 'moving' ? 'default' : train.status === 'delayed' ? 'secondary' : 'destructive'}>
-                          {train.status}
-                        </Badge>
-                        <span className="text-sm font-mono">{train.speed} km/h</span>
-                      </div>
-                    </div>
-                    <div className="relative">
-                      <Progress value={train.position} className="h-3" />
-                      <div 
-                        className={`absolute top-0 h-3 w-3 rounded-full ${getStatusColor(train.status)} transition-smooth`}
-                        style={{ left: `${train.position}%`, transform: 'translateX(-50%)' }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+        {/* Enhanced Tabbed Interface */}
+        <Tabs defaultValue="overview" className="w-full">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="overview" className="flex items-center gap-2">
+              <Signal className="h-4 w-4" />
+              Overview
+            </TabsTrigger>
+            <TabsTrigger value="conflicts" className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4" />
+              Conflicts
+            </TabsTrigger>
+            <TabsTrigger value="simulator" className="flex items-center gap-2">
+              <Zap className="h-4 w-4" />
+              Simulator
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="flex items-center gap-2">
+              <BarChart className="h-4 w-4" />
+              Analytics
+            </TabsTrigger>
+            <TabsTrigger value="learning" className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Learning
+            </TabsTrigger>
+          </TabsList>
 
-          {/* AI Recommendations */}
-          <Card className="gradient-control border-border">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Zap className="h-5 w-5 text-accent pulse-signal" />
-                AI Recommendations
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {recommendations.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <CheckCircle className="h-12 w-12 mx-auto mb-2 text-success" />
-                    <p>All systems optimal</p>
-                  </div>
-                ) : (
-                  recommendations.map((rec) => (
-                    <div key={rec.id} className="p-4 border border-border rounded-lg bg-card/50">
-                      <div className="space-y-3">
+          <TabsContent value="overview" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Track Visualization */}
+              <Card className="lg:col-span-2 gradient-control border-border">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Signal className="h-5 w-5 text-primary" />
+                    Live Track Status
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {trains.map((train) => (
+                      <div key={train.id} className="space-y-2">
                         <div className="flex items-center justify-between">
-                          <Badge variant="outline" className="text-accent border-accent">
-                            {rec.type.toUpperCase()}
-                          </Badge>
-                          <span className="text-sm text-muted-foreground">{rec.confidence}% confidence</span>
+                          <div className="flex items-center gap-3">
+                            <Train className={`h-5 w-5 ${train.status === 'moving' ? 'train-moving text-primary' : 'text-muted-foreground'}`} />
+                            <div>
+                              <p className="font-medium">{train.name}</p>
+                              <p className="text-sm text-muted-foreground">→ {train.destination}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <Badge variant={train.status === 'moving' ? 'default' : train.status === 'delayed' ? 'secondary' : 'destructive'}>
+                              {train.status}
+                            </Badge>
+                            <span className="text-sm font-mono">{train.speed} km/h</span>
+                          </div>
                         </div>
-                        <p className="text-sm font-medium">{rec.description}</p>
-                        <div className="p-3 bg-muted/30 rounded-md border-l-4 border-accent">
-                          <p className="text-xs text-muted-foreground mb-1 font-medium">AI Reasoning:</p>
-                          <p className="text-xs text-foreground leading-relaxed">{rec.explanation}</p>
-                        </div>
-                        <p className="text-xs text-success font-medium">{rec.impact}</p>
-                        <div className="flex gap-2 pt-2">
-                          <Button 
-                            size="sm" 
-                            onClick={() => handleAcceptRecommendation(rec.id)}
-                            className="flex-1 bg-success hover:bg-success/90"
-                          >
-                            Accept
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            onClick={() => handleAcceptRecommendation(rec.id)}
-                            className="flex-1"
-                          >
-                            Reject
-                          </Button>
+                        <div className="relative">
+                          <Progress value={train.position} className="h-3" />
+                          <div 
+                            className={`absolute top-0 h-3 w-3 rounded-full ${getStatusColor(train.status)} transition-smooth`}
+                            style={{ left: `${train.position}%`, transform: 'translateX(-50%)' }}
+                          />
                         </div>
                       </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* AI Recommendations */}
+              <Card className="gradient-control border-border">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Zap className="h-5 w-5 text-accent pulse-signal" />
+                    AI Recommendations
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {recommendations.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <CheckCircle className="h-12 w-12 mx-auto mb-2 text-success" />
+                        <p>All systems optimal</p>
+                      </div>
+                    ) : (
+                      recommendations.map((rec) => (
+                        <div key={rec.id} className="p-4 border border-border rounded-lg bg-card/50">
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <Badge variant="outline" className="text-accent border-accent">
+                                {rec.type.toUpperCase()}
+                              </Badge>
+                              <span className="text-sm text-muted-foreground">{rec.confidence}% confidence</span>
+                            </div>
+                            <p className="text-sm font-medium">{rec.description}</p>
+                            <div className="p-3 bg-muted/30 rounded-md border-l-4 border-accent">
+                              <p className="text-xs text-muted-foreground mb-1 font-medium">AI Reasoning:</p>
+                              <p className="text-xs text-foreground leading-relaxed">{rec.explanation}</p>
+                            </div>
+                            <p className="text-xs text-success font-medium">{rec.impact}</p>
+                            <div className="flex gap-2 pt-2">
+                              <Button 
+                                size="sm" 
+                                onClick={() => handleAcceptRecommendation(rec.id)}
+                                className="flex-1 bg-success hover:bg-success/90"
+                              >
+                                Accept
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                onClick={() => handleAcceptRecommendation(rec.id)}
+                                className="flex-1"
+                              >
+                                Reject
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="conflicts">
+            <ConflictChecker trains={trains} isSimulating={isSimulating} />
+          </TabsContent>
+
+          <TabsContent value="simulator">
+            <DelaySimulator />
+          </TabsContent>
+
+          <TabsContent value="analytics">
+            <PerformanceStats isSimulating={isSimulating} />
+          </TabsContent>
+
+          <TabsContent value="learning">
+            <LearningCollaboration />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
