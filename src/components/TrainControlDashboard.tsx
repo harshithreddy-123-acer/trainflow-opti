@@ -22,7 +22,7 @@ import {
 
 // Import new components
 import ConflictChecker from './ConflictChecker';
-import DelaySimulator from './DelaySimulator';
+import TrainScenarioBuilder from './TrainScenarioBuilder';
 import PerformanceStats from './PerformanceStats';
 import LearningCollaboration from './LearningCollaboration';
 
@@ -273,58 +273,24 @@ const TrainControlDashboard = () => {
                 </CardContent>
               </Card>
 
-              {/* AI Recommendations */}
+              {/* System Status */}
               <Card className="gradient-control border-border">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Zap className="h-5 w-5 text-accent pulse-signal" />
-                    AI Recommendations
+                    <CheckCircle className="h-5 w-5 text-success" />
+                    System Status
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {recommendations.length === 0 ? (
-                      <div className="text-center py-8 text-muted-foreground">
-                        <CheckCircle className="h-12 w-12 mx-auto mb-2 text-success" />
-                        <p>All systems optimal</p>
+                    <div className="text-center py-8">
+                      <CheckCircle className="h-12 w-12 mx-auto mb-2 text-success" />
+                      <p className="text-lg font-medium">All Systems Operational</p>
+                      <p className="text-sm text-muted-foreground">No active conflicts detected</p>
+                      <div className="mt-4 p-3 bg-success/10 rounded-md">
+                        <p className="text-sm text-success">AI recommendations available in Simulator tab</p>
                       </div>
-                    ) : (
-                      recommendations.map((rec) => (
-                        <div key={rec.id} className="p-4 border border-border rounded-lg bg-card/50">
-                          <div className="space-y-3">
-                            <div className="flex items-center justify-between">
-                              <Badge variant="outline" className="text-accent border-accent">
-                                {rec.type.toUpperCase()}
-                              </Badge>
-                              <span className="text-sm text-muted-foreground">{rec.confidence}% confidence</span>
-                            </div>
-                            <p className="text-sm font-medium">{rec.description}</p>
-                            <div className="p-3 bg-muted/30 rounded-md border-l-4 border-accent">
-                              <p className="text-xs text-muted-foreground mb-1 font-medium">AI Reasoning:</p>
-                              <p className="text-xs text-foreground leading-relaxed">{rec.explanation}</p>
-                            </div>
-                            <p className="text-xs text-success font-medium">{rec.impact}</p>
-                            <div className="flex gap-2 pt-2">
-                              <Button 
-                                size="sm" 
-                                onClick={() => handleAcceptRecommendation(rec.id)}
-                                className="flex-1 bg-success hover:bg-success/90"
-                              >
-                                Accept
-                              </Button>
-                              <Button 
-                                size="sm" 
-                                variant="outline" 
-                                onClick={() => handleAcceptRecommendation(rec.id)}
-                                className="flex-1"
-                              >
-                                Reject
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                    )}
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -336,7 +302,7 @@ const TrainControlDashboard = () => {
           </TabsContent>
 
           <TabsContent value="simulator">
-            <DelaySimulator />
+            <TrainScenarioBuilder />
           </TabsContent>
 
           <TabsContent value="analytics">

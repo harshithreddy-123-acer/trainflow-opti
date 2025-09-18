@@ -33,6 +33,13 @@ const PerformanceStats: React.FC<PerformanceStatsProps> = ({ isSimulating }) => 
     resolutionSpeedUp: 8.4
   });
 
+  const [aiMetrics, setAiMetrics] = useState({
+    aiAccuracyTrend: [78, 82, 85, 88, 91, 89, 92],
+    recommendationsTrend: [5, 8, 6, 12, 9, 7, 11],
+    delayReductionTrend: [2.1, 1.8, 2.5, 1.9, 1.6, 2.0, 1.4],
+    throughputImprovement: 15.7
+  });
+
   // Simulate real-time updates
   useEffect(() => {
     if (!isSimulating) return;
@@ -50,6 +57,14 @@ const PerformanceStats: React.FC<PerformanceStatsProps> = ({ isSimulating }) => 
           efficiencyScore: Math.min(100, prev.efficiencyScore + (Math.random() - 0.5) * 0.5)
         };
       });
+
+      // Update AI metrics
+      setAiMetrics(prev => ({
+        ...prev,
+        aiAccuracyTrend: [...prev.aiAccuracyTrend.slice(1), Math.max(75, Math.min(95, prev.aiAccuracyTrend[prev.aiAccuracyTrend.length - 1] + (Math.random() - 0.5) * 3))],
+        recommendationsTrend: [...prev.recommendationsTrend.slice(1), Math.max(0, Math.min(15, prev.recommendationsTrend[prev.recommendationsTrend.length - 1] + Math.floor((Math.random() - 0.5) * 3)))],
+        throughputImprovement: Math.max(0, Math.min(25, prev.throughputImprovement + (Math.random() - 0.5) * 1))
+      }));
     }, 3000);
 
     return () => clearInterval(interval);
@@ -120,12 +135,70 @@ const PerformanceStats: React.FC<PerformanceStatsProps> = ({ isSimulating }) => 
         </CardContent>
       </Card>
 
+      {/* AI Performance Trends */}
+      <Card className="gradient-control border-border">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <TrendingUp className="h-5 w-5 text-accent" />
+            AI Performance Trends
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {/* AI Accuracy Trend Chart */}
+            <div>
+              <div className="flex justify-between text-sm mb-2">
+                <span>AI Accuracy Trend</span>
+                <span className="text-success">{aiMetrics.aiAccuracyTrend[aiMetrics.aiAccuracyTrend.length - 1].toFixed(0)}%</span>
+              </div>
+              <div className="flex items-end gap-1 h-12">
+                {aiMetrics.aiAccuracyTrend.map((value, index) => (
+                  <div
+                    key={index}
+                    className="bg-success flex-1 rounded-sm"
+                    style={{ height: `${(value / 100) * 100}%` }}
+                    title={`${value.toFixed(1)}%`}
+                  />
+                ))}
+              </div>
+            </div>
+            
+            {/* Recommendations Trend */}
+            <div>
+              <div className="flex justify-between text-sm mb-2">
+                <span>Recommendations/Hour</span>
+                <span className="text-accent">{aiMetrics.recommendationsTrend[aiMetrics.recommendationsTrend.length - 1]}</span>
+              </div>
+              <div className="flex items-end gap-1 h-12">
+                {aiMetrics.recommendationsTrend.map((value, index) => (
+                  <div
+                    key={index}
+                    className="bg-accent flex-1 rounded-sm"
+                    style={{ height: `${(value / 15) * 100}%` }}
+                    title={`${value} recommendations`}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Throughput Improvement */}
+            <div>
+              <div className="flex justify-between text-sm">
+                <span>AI-Driven Throughput Improvement</span>
+                <span className="text-primary">+{aiMetrics.throughputImprovement.toFixed(1)}%</span>
+              </div>
+              <Progress value={aiMetrics.throughputImprovement} className="h-2 mt-1" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Improvement Trends */}
       <Card className="gradient-control border-border">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <TrendingUp className="h-5 w-5 text-success" />
-            Performance Trends
+            System Improvements
           </CardTitle>
         </CardHeader>
         <CardContent>
