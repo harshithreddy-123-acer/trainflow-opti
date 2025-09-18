@@ -3,13 +3,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  Train, 
-  Activity, 
-  AlertTriangle, 
-  CheckCircle, 
-  Clock, 
+import { MapContainer, TileLayer, Polyline, CircleMarker, Popup } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import {
+  Train,
+  Activity,
+  AlertTriangle,
+  CheckCircle,
+  Clock,
   Zap,
   Signal,
   Settings,
@@ -20,12 +21,6 @@ import {
   Lightbulb
 } from 'lucide-react';
 
-// Import new components
-import ConflictChecker from './ConflictChecker';
-import TrainScenarioBuilder from './TrainScenarioBuilder';
-import PerformanceStats from './PerformanceStats';
-import LearningCollaboration from './LearningCollaboration';
-
 interface Train {
   id: string;
   name: string;
@@ -33,6 +28,7 @@ interface Train {
   speed: number;
   status: 'moving' | 'stopped' | 'delayed';
   destination: string;
+  latlng: [number, number];
 }
 
 interface Recommendation {
@@ -47,9 +43,9 @@ interface Recommendation {
 const TrainControlDashboard = () => {
   const [isSimulating, setIsSimulating] = useState(false);
   const [trains, setTrains] = useState<Train[]>([
-    { id: 'T001', name: 'Express Mumbai', position: 25, speed: 85, status: 'moving', destination: 'Mumbai Central' },
-    { id: 'T002', name: 'Local Delhi', position: 60, speed: 45, status: 'delayed', destination: 'New Delhi' },
-    { id: 'T003', name: 'Freight Cargo', position: 40, speed: 30, status: 'stopped', destination: 'Cargo Terminal' },
+    { id: 'T001', name: 'Express Mumbai', position: 25, speed: 85, status: 'moving', destination: 'Mumbai Central', latlng: [19.076, 72.8777] },
+    { id: 'T002', name: 'Local Delhi', position: 60, speed: 45, status: 'delayed', destination: 'New Delhi', latlng: [28.6139, 77.209] },
+    { id: 'T003', name: 'Freight Cargo', position: 40, speed: 30, status: 'stopped', destination: 'Cargo Terminal', latlng: [19.0, 72.8] },
   ]);
 
   const [recommendations, setRecommendations] = useState<Recommendation[]>([
@@ -62,7 +58,7 @@ const TrainControlDashboard = () => {
       confidence: 94
     },
     {
-      id: 'R002', 
+      id: 'R002',
       type: 'hold',
       description: 'Hold Local Delhi for 3 minutes to avoid conflict',
       explanation: 'Predictive analysis shows Local Delhi and Freight Cargo will create deadlock at Platform 2 in 4 minutes. Holding Local Delhi for 3 minutes allows Freight Cargo to clear the platform, preventing cascade delays across 3 downstream trains. Safety buffer maintained at 2.5 minutes headway.',
@@ -82,11 +78,11 @@ const TrainControlDashboard = () => {
   // Simulate train movement
   useEffect(() => {
     if (!isSimulating) return;
-    
+
     const interval = setInterval(() => {
       setTrains(prev => prev.map(train => ({
         ...train,
-        position: train.status === 'moving' 
+        position: train.status === 'moving'
           ? Math.min(100, train.position + Math.random() * 2)
           : train.position
       })));
@@ -102,11 +98,21 @@ const TrainControlDashboard = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'moving': return 'bg-success';
-      case 'delayed': return 'bg-warning';
-      case 'stopped': return 'bg-destructive';
-      default: return 'bg-muted';
+      case 'moving': return 'green';
+      case 'delayed': return 'orange';
+      case 'stopped': return 'red';
+      default: return 'gray';
     }
+  };
+
+  const track: [number, number][] = [[19.076, 72.8777], [28.6139, 77.209]]; // Mumbai to Delhi
+
+  const getLatLng = (position: number): [number, number] => {
+    const [lat1, lng1] = track[0];
+    const [lat2, lng2] = track[1];
+    const lat = lat1 + (lat2 - lat1) * (position / 100);
+    const lng = lng1 + (lng2 - lng1) * (position / 100);
+    return [lat, lng];
   };
 
   return (
@@ -206,113 +212,189 @@ const TrainControlDashboard = () => {
           </Card>
         </div>
 
-        {/* Enhanced Tabbed Interface */}
-        <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="overview" className="flex items-center gap-2">
-              <Signal className="h-4 w-4" />
-              Overview
-            </TabsTrigger>
-            <TabsTrigger value="conflicts" className="flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4" />
-              Conflicts
-            </TabsTrigger>
-            <TabsTrigger value="simulator" className="flex items-center gap-2">
-              <Zap className="h-4 w-4" />
-              Simulator
-            </TabsTrigger>
-            <TabsTrigger value="analytics" className="flex items-center gap-2">
-              <BarChart className="h-4 w-4" />
-              Analytics
-            </TabsTrigger>
-            <TabsTrigger value="learning" className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              Learning
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="overview" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Track Visualization */}
-              <Card className="lg:col-span-2 gradient-control border-border">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Signal className="h-5 w-5 text-primary" />
-                    Live Track Status
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {trains.map((train) => (
-                      <div key={train.id} className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <Train className={`h-5 w-5 ${train.status === 'moving' ? 'train-moving text-primary' : 'text-muted-foreground'}`} />
-                            <div>
-                              <p className="font-medium">{train.name}</p>
-                              <p className="text-sm text-muted-foreground">→ {train.destination}</p>
-                            </div>
+        {/* Clean Main Dashboard - No Tabs */}
+        <div className="space-y-6">
+          {/* System Status Overview */}
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            {/* Live Track Status - Main Focus */}
+            <Card className="lg:col-span-2 gradient-control border-border">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Signal className="h-5 w-5 text-primary" />
+                  Live Train Status
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">Real-time train positions and status</p>
+              </CardHeader>
+              <CardContent>
+                <MapContainer center={[23.5, 75]} zoom={5} style={{ height: '400px', width: '100%' }}>
+                  <TileLayer
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                  />
+                  <Polyline positions={track} pathOptions={{ color: 'blue', weight: 4 }} />
+                  {trains.map((train) => {
+                    const pos = getLatLng(train.position);
+                    return (
+                      <CircleMarker center={pos} pathOptions={{ color: getStatusColor(train.status), fillOpacity: 0.8, radius: 8 }}>
+                        <Popup>
+                          <div>
+                            <strong>{train.name}</strong><br />
+                            Destination: {train.destination}<br />
+                            Speed: {train.speed} km/h<br />
+                            Status: {train.status}
                           </div>
-                          <div className="flex items-center gap-3">
-                            <Badge variant={train.status === 'moving' ? 'default' : train.status === 'delayed' ? 'secondary' : 'destructive'}>
-                              {train.status}
-                            </Badge>
-                            <span className="text-sm font-mono">{train.speed} km/h</span>
-                          </div>
-                        </div>
-                        <div className="relative">
-                          <Progress value={train.position} className="h-3" />
-                          <div 
-                            className={`absolute top-0 h-3 w-3 rounded-full ${getStatusColor(train.status)} transition-smooth`}
-                            style={{ left: `${train.position}%`, transform: 'translateX(-50%)' }}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+                        </Popup>
+                      </CircleMarker>
+                    );
+                  })}
+                </MapContainer>
+              </CardContent>
+            </Card>
 
-              {/* System Status */}
-              <Card className="gradient-control border-border">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <CheckCircle className="h-5 w-5 text-success" />
-                    System Status
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="text-center py-8">
+            {/* AI Recommendations - Key Actions */}
+            <Card className="gradient-control border-border">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Lightbulb className="h-5 w-5 text-accent" />
+                  AI Suggestions
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">Smart recommendations to optimize operations</p>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {recommendations.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
                       <CheckCircle className="h-12 w-12 mx-auto mb-2 text-success" />
-                      <p className="text-lg font-medium">All Systems Operational</p>
-                      <p className="text-sm text-muted-foreground">No active conflicts detected</p>
-                      <div className="mt-4 p-3 bg-success/10 rounded-md">
-                        <p className="text-sm text-success">AI recommendations available in Simulator tab</p>
-                      </div>
+                      <p className="font-medium">All systems optimal</p>
+                      <p className="text-xs">No immediate actions needed</p>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
+                  ) : (
+                    recommendations.slice(0, 2).map((rec) => (
+                      <div key={rec.id} className="p-4 border border-border rounded-lg bg-card/50">
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <Badge variant="outline" className="text-accent border-accent">
+                              {rec.type.toUpperCase()}
+                            </Badge>
+                            <span className="text-sm text-muted-foreground">{rec.confidence}%</span>
+                          </div>
+                          <p className="text-sm font-medium leading-relaxed">{rec.description}</p>
+                          <p className="text-xs text-success font-medium">{rec.impact}</p>
+                          <div className="flex gap-2 pt-2">
+                            <Button
+                              size="sm"
+                              onClick={() => handleAcceptRecommendation(rec.id)}
+                              className="flex-1 bg-success hover:bg-success/90"
+                            >
+                              Accept
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleAcceptRecommendation(rec.id)}
+                              className="flex-1"
+                            >
+                              Reject
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </CardContent>
+            </Card>
 
-          <TabsContent value="conflicts">
-            <ConflictChecker trains={trains} isSimulating={isSimulating} />
-          </TabsContent>
+            {/* Quick Actions Panel */}
+            <Card className="gradient-control border-border">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Settings className="h-5 w-5 text-primary" />
+                  Quick Actions
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">Common control operations</p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Button
+                  variant={isSimulating ? "destructive" : "default"}
+                  onClick={() => setIsSimulating(!isSimulating)}
+                  className="w-full flex items-center gap-2"
+                >
+                  {isSimulating ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                  {isSimulating ? 'Stop Simulation' : 'Start Simulation'}
+                </Button>
 
-          <TabsContent value="simulator">
-            <TrainScenarioBuilder />
-          </TabsContent>
+                <div className="space-y-2">
+                  <Button variant="outline" className="w-full justify-start" size="sm">
+                    <AlertTriangle className="h-4 w-4 mr-2" />
+                    Check Conflicts
+                  </Button>
+                  <Button variant="outline" className="w-full justify-start" size="sm">
+                    <BarChart className="h-4 w-4 mr-2" />
+                    View Analytics
+                  </Button>
+                  <Button variant="outline" className="w-full justify-start" size="sm">
+                    <Zap className="h-4 w-4 mr-2" />
+                    Run Simulator
+                  </Button>
+                  <Button variant="outline" className="w-full justify-start" size="sm">
+                    <Users className="h-4 w-4 mr-2" />
+                    Team Collaboration
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
-          <TabsContent value="analytics">
-            <PerformanceStats isSimulating={isSimulating} />
-          </TabsContent>
+          {/* System Health Summary */}
+          <Card className="gradient-control border-border">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Activity className="h-5 w-5 text-primary" />
+                System Health Overview
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">Key performance indicators and system status</p>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                <div className="text-center p-4 border border-border rounded-lg bg-card/30">
+                  <Activity className="h-8 w-8 text-primary mx-auto mb-2" />
+                  <div className="text-2xl font-bold text-primary">{kpis.throughput}</div>
+                  <p className="text-sm text-muted-foreground">Throughput</p>
+                  <p className="text-xs text-muted-foreground">trains/hour</p>
+                </div>
 
-          <TabsContent value="learning">
-            <LearningCollaboration />
-          </TabsContent>
-        </Tabs>
+                <div className="text-center p-4 border border-border rounded-lg bg-card/30">
+                  <Clock className="h-8 w-8 text-warning mx-auto mb-2" />
+                  <div className="text-2xl font-bold text-warning">{kpis.avgDelay}m</div>
+                  <p className="text-sm text-muted-foreground">Avg Delay</p>
+                  <p className="text-xs text-muted-foreground">minutes</p>
+                </div>
+
+                <div className="text-center p-4 border border-border rounded-lg bg-card/30">
+                  <CheckCircle className="h-8 w-8 text-success mx-auto mb-2" />
+                  <div className="text-2xl font-bold text-success">{kpis.punctuality}%</div>
+                  <p className="text-sm text-muted-foreground">Punctuality</p>
+                  <p className="text-xs text-muted-foreground">on-time</p>
+                </div>
+
+                <div className="text-center p-4 border border-border rounded-lg bg-card/30">
+                  <Zap className="h-8 w-8 text-accent mx-auto mb-2" />
+                  <div className="text-2xl font-bold text-accent">{kpis.acceptanceRate}%</div>
+                  <p className="text-sm text-muted-foreground">AI Acceptance</p>
+                  <p className="text-xs text-muted-foreground">rate</p>
+                </div>
+
+                <div className="text-center p-4 border border-border rounded-lg bg-card/30">
+                  <AlertTriangle className="h-8 w-8 text-success mx-auto mb-2" />
+                  <div className="text-2xl font-bold text-success">{kpis.safetyViolations}</div>
+                  <p className="text-sm text-muted-foreground">Safety</p>
+                  <p className="text-xs text-muted-foreground">violations</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
